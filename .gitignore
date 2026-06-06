@@ -22,3 +22,8 @@ answer_*.geojson
 # into 36kroutes/ only when needed, but do not commit it.
 36kroutes/*
 !36kroutes/README.md
+
+# Server-side evaluation workflow artifacts.
+data/
+results/
+logs/

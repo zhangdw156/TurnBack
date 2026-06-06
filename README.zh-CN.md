@@ -23,14 +23,71 @@ TurnBack 把 **路径反转** 当作检验大模型地理空间认知能力的�
 
 ![TurnBack 流程图](assets/route_generation.png)
 
-## 快速开始
 
-安装：
+## 轻量 vLLM 评测工作流
+
+本分支按相邻 K2、USTBench、STARK_Benchmark 的服务器评测方式整理。
+在评测服务器上 fresh clone 后执行：
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .[dev,llm]
+uv sync
+bash scripts/prepare_eval_data.sh
+```
+
+`prepare_eval_data.sh` 会从 Hugging Face 下载 `zhangdw/TurnBack-10pct`，
+把可断点复用的下载缓存放在 `${TMPDIR:-/tmp}` 下，并把评测 JSONL 安装到：
+
+```text
+data/turnback_10pct.jsonl
+```
+
+然后对已经用 vLLM/OpenAI-compatible chat completions 部署好的 Qwen3 模型评测：
+
+```bash
+bash scripts/run_vllm_eval.sh \
+  --model qwen3-4b-thinking-2507 \
+  --base-url http://127.0.0.1:8000/v1 \
+  --api-key EMPTY \
+  --jobs 8
+```
+
+`--jobs` 是并发度开关。结果默认写到：
+
+```text
+results/<served-model-name>/turnback_10pct.jsonl
+results/<served-model-name>/turnback_10pct_summary.json
+```
+
+评测脚本默认支持断点续评。重复运行同一命令时，只会跳过已经有完整结果的样本；
+“完整”要求 sample id 匹配、数据源签名匹配、`parser_status=ok`，且 similarity 是有限数值。
+中断造成的坏 JSONL 行、API 错误、解析失败、执行失败都不会被算作完成。
+只有明确想全量重跑时才使用 `--force`。
+
+用同一套完成判定预估进度：
+
+```bash
+uv run python scripts/estimate_eval_progress.py --model qwen3-4b-thinking-2507
+```
+
+实验完成后上传到 Hugging Face Buckets，并在另一台机器同步回来分析：
+
+```bash
+hfsync/local_to_remote.sh --dry-run
+hfsync/local_to_remote.sh
+
+# 分析机器上：
+hfsync/remote_to_local.sh
+```
+
+默认目标是 `hf://buckets/zhangdw/leo-benchmark/TurnBack-eval/results`。
+可用 `HF_BUCKET_ID`、`HF_TURNBACK_PREFIX`，或脚本的 `--bucket` / `--prefix` 覆盖。
+
+## 快速开始
+
+本地开发安装：
+
+```bash
+uv sync --extra dev --extra llm
 ```
 
 生成三档新路线：
@@ -101,7 +158,8 @@ path-builder score \
 ├── assets/                   # 复用自论文的图
 ├── configs/similarity.paper.json
 ├── src/path_builder/         # Path Builder、路线生成、prompting、评分
-├── scripts/quick_check.sh    # 本地 smoke test
+├── scripts/                  # 数据准备、vLLM 评测、进度预估、本地 smoke test
+├── hfsync/                   # HF bucket 上传/下载脚本
 ├── tests/                    # 公开测试集
 ├── README.md                 # 英文 README
 ├── README.zh-CN.md           # 中文 README
@@ -112,10 +170,10 @@ path-builder score \
 ## 快速检查
 
 ```bash
-ruff check src/path_builder tests --select F,E9
-python -m compileall src/path_builder
-pytest -q
-./scripts/quick_check.sh
+uv run ruff check src/path_builder tests scripts --select F,E9
+uv run python -m compileall src/path_builder scripts
+uv run pytest -q
+bash scripts/quick_check.sh
 ```
 
 ## 引用

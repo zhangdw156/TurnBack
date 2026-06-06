@@ -23,14 +23,77 @@ The paper contributes three pieces:
 
 ![TurnBack pipeline](assets/route_generation.png)
 
-## Quick Start
 
-Install:
+## Lightweight vLLM Evaluation Workflow
+
+This branch is set up for the server workflow used by the sibling K2, USTBench,
+and STARK_Benchmark evaluation forks. From a fresh clone on an evaluation
+server:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .[dev,llm]
+uv sync
+bash scripts/prepare_eval_data.sh
+```
+
+`prepare_eval_data.sh` downloads the Hugging Face dataset
+`zhangdw/TurnBack-10pct` into a stable cache under `${TMPDIR:-/tmp}` and installs
+its evaluation JSONL at:
+
+```text
+data/turnback_10pct.jsonl
+```
+
+Then evaluate a Qwen3 model already deployed by vLLM/OpenAI-compatible chat
+completions:
+
+```bash
+bash scripts/run_vllm_eval.sh \
+  --model qwen3-4b-thinking-2507 \
+  --base-url http://127.0.0.1:8000/v1 \
+  --api-key EMPTY \
+  --jobs 8
+```
+
+`--jobs` is the concurrency knob. Results are written under:
+
+```text
+results/<served-model-name>/turnback_10pct.jsonl
+results/<served-model-name>/turnback_10pct_summary.json
+```
+
+The evaluator is resume-aware by default. Rerunning the same command skips only
+samples that already have a completed record with matching sample id, matching
+source signature, `parser_status=ok`, and a finite similarity score. Interrupted
+or malformed JSONL lines, API errors, parse failures, and execution failures are
+left pending. Use `--force` only for an intentional full rerun.
+
+Estimate progress with the same completion rule:
+
+```bash
+uv run python scripts/estimate_eval_progress.py --model qwen3-4b-thinking-2507
+```
+
+Sync results to Hugging Face Buckets and later pull them on another machine:
+
+```bash
+hfsync/local_to_remote.sh --dry-run
+hfsync/local_to_remote.sh
+
+# On the analysis machine:
+hfsync/remote_to_local.sh
+```
+
+By default the bucket destination is
+`hf://buckets/zhangdw/leo-benchmark/TurnBack-eval/results`. Override it with
+`HF_BUCKET_ID`, `HF_TURNBACK_PREFIX`, or the scripts' `--bucket` / `--prefix`
+options.
+
+## Quick Start
+
+Install for local development:
+
+```bash
+uv sync --extra dev --extra llm
 ```
 
 Generate new routes in three difficulty levels:
@@ -101,7 +164,8 @@ The paper-reported `36,000` routes refer to the benchmark definition in the pape
 ├── assets/                   # figures reused from the paper
 ├── configs/similarity.paper.json
 ├── src/path_builder/         # Path Builder, route generation, prompting, scoring
-├── scripts/quick_check.sh    # local smoke test
+├── scripts/                  # data prep, vLLM eval, progress, local smoke test
+├── hfsync/                   # HF bucket upload/download helpers
 ├── tests/                    # public test suite
 ├── README.md                 # English README
 ├── README.zh-CN.md           # Chinese README
@@ -112,10 +176,10 @@ The paper-reported `36,000` routes refer to the benchmark definition in the pape
 ## Quick Check
 
 ```bash
-ruff check src/path_builder tests --select F,E9
-python -m compileall src/path_builder
-pytest -q
-./scripts/quick_check.sh
+uv run ruff check src/path_builder tests scripts --select F,E9
+uv run python -m compileall src/path_builder scripts
+uv run pytest -q
+bash scripts/quick_check.sh
 ```
 
 ## Citation
