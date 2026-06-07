@@ -24,7 +24,6 @@ from typing import Any
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress_bar import ProgressBar
 from rich.table import Table
 from rich.text import Text
 
@@ -118,21 +117,34 @@ def format_optional_score(value: float | None) -> str:
     return "n/a" if value is None else f"{value:.4f}"
 
 
+def format_progress_bar(progress: float, width: int = 18) -> Text:
+    bounded = max(0.0, min(1.0, progress))
+    filled = round(bounded * width)
+    empty = width - filled
+    style = progress_style(bounded)
+    text = Text()
+    text.append("[", style="dim")
+    text.append("█" * filled, style=style)
+    text.append("░" * empty, style="dim")
+    text.append("] ", style="dim")
+    text.append(format_pct(bounded), style=style)
+    return text
+
+
 def render_table(progress_items: list[ModelProgress]) -> None:
     console = Console()
     table = Table(title="TurnBack evaluation progress", box=box.SIMPLE_HEAVY)
     table.add_column("model", overflow="fold")
-    table.add_column("progress", justify="right")
+    table.add_column("progress", justify="right", no_wrap=True)
     table.add_column("done/total", justify="right")
     table.add_column("observed", justify="right")
     table.add_column("bad jsonl", justify="right")
     table.add_column("mean sim", justify="right")
     table.add_column("result", overflow="fold")
     for item in progress_items:
-        bar = ProgressBar(total=1.0, completed=item.progress, width=18)
         table.add_row(
             item.model,
-            Text.assemble(bar, " ", Text(format_pct(item.progress), style=progress_style(item.progress))),
+            format_progress_bar(item.progress),
             f"{item.completed:,}/{item.total:,}",
             f"{item.observed:,}",
             f"{item.bad_jsonl_lines:,}",
