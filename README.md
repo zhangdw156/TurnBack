@@ -73,6 +73,25 @@ Estimate progress with the same completion rule:
 uv run python scripts/estimate_eval_progress.py --model qwen3-4b-thinking-2507
 ```
 
+For high-concurrency evaluations, pre-warm the OSM graph cache with low
+concurrency before running the model evaluator. Keep the warm-up `--dist` aligned
+with the evaluator `--min-dist` so the GraphML cache paths match:
+
+```bash
+uv run python scripts/warm_eval_graph_cache.py \
+  --data-file data/turnback_10pct.jsonl \
+  --dist 3500 \
+  --jobs 2
+
+bash scripts/run_vllm_eval.sh \
+  --model qwen3-4b-thinking-2507 \
+  --base-url http://127.0.0.1:8000/v1 \
+  --api-key EMPTY \
+  --jobs 64 \
+  -- \
+  --min-dist 3500
+```
+
 Sync results to Hugging Face Buckets and later pull them on another machine:
 
 ```bash

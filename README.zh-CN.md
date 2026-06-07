@@ -69,6 +69,24 @@ results/<served-model-name>/turnback_10pct_summary.json
 uv run python scripts/estimate_eval_progress.py --model qwen3-4b-thinking-2507
 ```
 
+如果要高并发评测，建议先低并发预热 OSM 图缓存，再跑模型评测。预热时的
+`--dist` 要和正式评测的 `--min-dist` 保持一致，这样 GraphML 缓存路径才能命中：
+
+```bash
+uv run python scripts/warm_eval_graph_cache.py \
+  --data-file data/turnback_10pct.jsonl \
+  --dist 3500 \
+  --jobs 2
+
+bash scripts/run_vllm_eval.sh \
+  --model qwen3-4b-thinking-2507 \
+  --base-url http://127.0.0.1:8000/v1 \
+  --api-key EMPTY \
+  --jobs 64 \
+  -- \
+  --min-dist 3500
+```
+
 实验完成后上传到 Hugging Face Buckets，并在另一台机器同步回来分析：
 
 ```bash

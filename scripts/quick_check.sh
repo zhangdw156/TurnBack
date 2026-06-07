@@ -17,6 +17,7 @@ fi
 "${RUN[@]}" python -m path_builder.cli generate-reverse --help >/dev/null
 "${RUN[@]}" python scripts/evaluate_vllm.py --help >/dev/null
 "${RUN[@]}" python scripts/estimate_eval_progress.py --help >/dev/null
+"${RUN[@]}" python scripts/warm_eval_graph_cache.py --help >/dev/null
 bash scripts/prepare_eval_data.sh --help >/dev/null
 bash scripts/run_vllm_eval.sh --help >/dev/null
 bash hfsync/local_to_remote.sh --help >/dev/null
