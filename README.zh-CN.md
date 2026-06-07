@@ -79,7 +79,7 @@ hfsync/local_to_remote.sh
 hfsync/remote_to_local.sh
 ```
 
-默认目标是 `hf://buckets/zhangdw/leo-benchmark/TurnBack-eval/results`。
+默认目标是 `hf://buckets/zhangdw/leo-benchmark/TurnBack/results`。
 可用 `HF_BUCKET_ID`、`HF_TURNBACK_PREFIX`，或脚本的 `--bucket` / `--prefix` 覆盖。
 
 ## 快速开始

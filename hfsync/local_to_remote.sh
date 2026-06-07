@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Direction: local TurnBack-eval artifacts -> Hugging Face bucket.
+# Direction: local TurnBack artifacts -> Hugging Face bucket.
 # Safe default: no remote deletion. Pass --delete only from an authoritative
 # complete local copy; it deletes remote files absent locally.
 
@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 BUCKET_ID="${HF_BUCKET_ID:-zhangdw/leo-benchmark}"
-REMOTE_PREFIX="${HF_TURNBACK_PREFIX:-TurnBack-eval}"
+REMOTE_PREFIX="${HF_TURNBACK_PREFIX:-TurnBack}"
 HF_CLI_STRING="${HF_CLI:-uvx hf}"
 LOCAL_DIR="${REPO_ROOT}/results"
 DRY_RUN=0
@@ -22,10 +22,10 @@ usage() {
 Usage: hfsync/local_to_remote.sh [options] [-- extra hf sync args]
 
 Direction:
-  LOCAL TurnBack-eval results -> HF bucket
+  LOCAL TurnBack results -> HF bucket
 
 Default sync pair:
-  results/ -> hf://buckets/zhangdw/leo-benchmark/TurnBack-eval/results
+  results/ -> hf://buckets/zhangdw/leo-benchmark/TurnBack/results
 
 Safe defaults:
   - Does not delete remote files absent locally.
@@ -39,7 +39,7 @@ Options:
   --ignore-existing     Skip remote files that already exist; only upload new files.
   --new-only            Alias for --ignore-existing.
   --bucket BUCKET_ID    Bucket ID. Default: zhangdw/leo-benchmark.
-  --prefix PREFIX       Remote prefix inside the bucket. Default: TurnBack-eval.
+  --prefix PREFIX       Remote prefix inside the bucket. Default: TurnBack.
   -h, --help            Show this help.
 
 Environment overrides:

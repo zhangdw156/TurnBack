@@ -84,7 +84,7 @@ hfsync/remote_to_local.sh
 ```
 
 By default the bucket destination is
-`hf://buckets/zhangdw/leo-benchmark/TurnBack-eval/results`. Override it with
+`hf://buckets/zhangdw/leo-benchmark/TurnBack/results`. Override it with
 `HF_BUCKET_ID`, `HF_TURNBACK_PREFIX`, or the scripts' `--bucket` / `--prefix`
 options.
 
